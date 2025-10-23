@@ -77,3 +77,4 @@ the paaper is the merge conflict
     SELECT * FROM Reference.Mastercodes
     SELECT * FROM Reference.vw_MasterDomains
     SELECT * FROM Reference.vw_MasterCodes
+    SELECT * FROM Reference.vw_MasterCodes
