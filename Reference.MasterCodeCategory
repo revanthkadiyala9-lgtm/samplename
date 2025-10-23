@@ -1,4 +1,4 @@
-the paaper is the merge conflict sssssss
+the paaper is the merge conflict
 
     -- DROP TABLE [Reference].[MasterCodeCategory]
     IF NOT EXISTS (SELECT Name FROM sysobjects WHERE type='U' AND name='MasterCodeCategory')
