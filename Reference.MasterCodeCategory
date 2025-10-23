@@ -1,10 +1,10 @@
-the paaper is the merge conflict
+the paaper is the merge conflict sssssss
 
     -- DROP TABLE [Reference].[MasterCodeCategory]
     IF NOT EXISTS (SELECT Name FROM sysobjects WHERE type='U' AND name='MasterCodeCategory')
 
     CREATE TABLE Reference.MasterCodeCategory (
-        CategoryID INT IDENTITY(1,1) NULL,
+        CategoryID INT IDENTITY(1,1) NULL ,
         CategoryCode VARCHAR(10) NOT NULL ,
         CategoryName NVARCHAR(100) NOT NULL,   
         Description NVARCHAR(255) NULL,
