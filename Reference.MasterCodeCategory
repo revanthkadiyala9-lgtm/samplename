@@ -1,0 +1,79 @@
+the paaper is the merge conflict
+
+    -- DROP TABLE [Reference].[MasterCodeCategory]
+    IF NOT EXISTS (SELECT Name FROM sysobjects WHERE type='U' AND name='MasterCodeCategory')
+
+    CREATE TABLE Reference.MasterCodeCategory (
+        CategoryID INT IDENTITY(1,1) NULL ,
+        CategoryCode VARCHAR(10) NOT NULL ,
+        CategoryName NVARCHAR(100) NOT NULL,   
+        Description NVARCHAR(255) NULL,
+        ParentCategoryCode VARCHAR(10) NULL REFERENCES Reference.MasterCodeCategory(CategoryCode),
+        Level TINYINT DEFAULT 1, -- 1=Domain, 2=Category (optional)
+        IsActive BIT DEFAULT 1,
+        CreatedBy INT NOT NULL,
+        CreatedAt DATETIME2 DEFAULT SYSUTCDATETIME() NOT NULL,
+        ModifiedBy INT NOT NULL,
+        ModifiedAt DATETIME2 DEFAULT SYSUTCDATETIME() NOT NULL,
+        IsDomain AS (CASE WHEN ParentCategoryCode IS NULL THEN 1 ELSE 0 END) PERSISTED,
+        RowVersion ROWVERSION,                         -- For optimistic concurrency control
+    CONSTRAINT [PK_MasterCodeCategory] PRIMARY KEY NONCLUSTERED
+    (
+    CategoryCode ASC
+    )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON, FILLFACTOR = 80, OPTIMIZE_FOR_SEQUENTIAL_KEY = OFF) ON [PRIMARY]
+    ) ON [PRIMARY]
+
+
+    -- DROP TABLE [Reference].[MasterCodes]
+    IF NOT EXISTS (SELECT Name FROM sysobjects WHERE type='U' AND name='MasterCodes')
+    CREATE TABLE Reference.MasterCodes (
+        CodeID BIGINT IDENTITY(1,1),   
+        CodeValue VARCHAR(50) NOT NULL,
+        CodeName NVARCHAR(150) NOT NULL,
+        Description NVARCHAR(255) NULL,   
+        ParentCategoryCode VARCHAR(10) NOT NULL FOREIGN KEY REFERENCES Reference.MasterCodeCategory(CategoryCode),
+
+        IsActive BIT DEFAULT 1,
+        EffectiveDate DATETIME2 DEFAULT SYSUTCDATETIME() NOT NULL,
+        ExpirationDate DATETIME2 NULL,
+
+        IsSelectable INT DEFAULT 0,
+        IsEditable INT DEFAULT 0,
+        IsDefault INT DEFAULT 0,
+        SortOrder SMALLINT NULL,
+
+        CreatedBy INT NOT NULL,
+        CreatedAt DATETIME2 DEFAULT SYSUTCDATETIME() NOT NULL,
+        ModifiedBy INT NOT NULL,
+        ModifiedAt DATETIME2 DEFAULT SYSUTCDATETIME() NOT NULL,
+        RowVersion ROWVERSION,                         -- For optimistic concurrency control        
+        CONSTRAINT UQ_MasterCode PRIMARY KEY CLUSTERED  (ParentCategoryCode, CodeValue)
+    );
+
+    -- Indexes
+    CREATE INDEX IX_MasterCodeCategory_Parent ON Reference.MasterCodeCategory(ParentCategoryCode);
+    CREATE INDEX IX_MasterCode_CategoryID ON Reference.MasterCodes(CodeID);
+    CREATE INDEX IX_MasterCode_CodeValue ON Reference.MasterCodes(CodeValue);
+    CREATE INDEX IX_MasterCode_ParentCategoryCode ON Reference.MasterCodes(ParentCategoryCode);
+
+    -- Views
+
+    CREATE VIEW Reference.vw_MasterDomains AS
+    SELECT * FROM Reference.MasterCodeCategory WHERE ParentCategoryCode IS NULL;
+
+    CREATE VIEW Reference.vw_MasterCodes AS
+    SELECT 
+        mcp.CategoryCode AS ParentCategoryCode,
+        mcp.CategoryName AS ParentCategoryName,
+        mcc.CategoryCode AS CategoryCode,
+        mcc.CategoryName AS CategoryName,
+        mc.CodeValue,
+        mc.CodeName,
+        mc.IsActive
+    FROM Reference.MasterCodes mc WITH(NOLOCK)
+    JOIN Reference.MasterCodeCategory mcc WITH(NOLOCK) ON mc.ParentCategoryCode = mcc.CategoryCode
+    LEFT JOIN Reference.MasterCodeCategory mcp WITH(NOLOCK) ON mc.ParentCategoryCode = mcp.CategoryCode AND mcp.ParentCategoryCode IS NULL;
+    
+    SELECT * FROM Reference.Mastercodes
+    SELECT * FROM Reference.vw_MasterDomains
+    SELECT * FROM Reference.vw_MasterCodes
